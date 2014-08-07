@@ -5,9 +5,6 @@
 # Created by: Aaron Albin
 # http://www.aaronalbin.com/praatr/
 
-# How to load this file:
-#source( paste(.libPaths(),"PraatR","PraatR.r",sep="/") )
-
 ################################################################################################
 # This program is free software. You can redistribute it and/or modify it under the terms of   #
 #    the GNU General Public License as published by the Free Software Foundation -             #
@@ -17,21 +14,47 @@
 # For details on the GNU General Public License, see: http://www.gnu.org/licenses/             #
 ################################################################################################
 
-###################
-# Welcome message #
-###################
-
-# Put in some ASCII art or something - spruce this up
-cat("\n######################\n# Welcome to PraatR! #\n######################\n\nFor documentation on how to use PraatR and information on how to cite it,\n    visit the homepage at http://www.aaronalbin.com/praatr/\nPraatR is released under the the GNU General Public License: http://www.gnu.org/licenses/.\n\n\n")
-# Perhaps only show this message if there were no errors in loading it? What functions are out there for me to check this? Perhaps just {... stop();stop();stop(); cat(welcome)}?
-# Say 'PraatR is loaded and ready to go!' instead?
-
 ###########################
 # Load supported commands #
 ###########################
 
-# Since this isn't a system/shell command, .libPaths() should work on all OSes in this context
-SupportedCommands = read.table(paste(.libPaths(),"PraatR","SupportedCommands.txt",sep="/"), sep="\t", header=TRUE, quote="")
+SupportedCommands = function(){
+# Search for the 'SupportedCommands' file in all possible locations
+LibraryDirectories = unique( c( R.home("library"), .libPaths() ) )
+
+# For reference, on a Mac, R.home("library") is...
+# "/Library/Frameworks/R.framework/Resources/library"
+# ...whereas one of the directories included in the vector .libPaths() should be something like...
+# "/Library/Frameworks/R.framework/Versions/3.0/Resources/library"
+
+nDirectories = length(LibraryDirectories)
+
+# Add slashes if necessary
+LastCharacters = substring( LibraryDirectories,first=nchar(LibraryDirectories),last=nchar(LibraryDirectories) )
+EndWithSlash = LastCharacters == "/" # | LastCharacters == "\\"
+InterveningSlashes = rep("",times=)
+InterveningSlashes[!EndWithSlash] <- "/"
+
+# Make list of possible file paths
+SupportedCommands_Paths = paste(LibraryDirectories,InterveningSlashes,"PraatR/SupportedCommands.txt",sep="")
+
+# Find which ones exist
+ExistingPaths = file.exists(SupportedCommands_Paths)
+
+# Issue an error message if SupportedCommands.txt could not be found and stop computation
+if( sum(ExistingPaths)==0 ){ stop("Could not find 'SupportedCommands.txt'. Make sure PraatR is properly installed.") }
+
+# Use the first path that exists
+# Note that the order is 'unique( c( R.home("library"), .libPaths() ) )' (cf. code above)
+PathToLoad = SupportedCommands_Paths[min( which(ExistingPaths) )]
+
+SupportedCommands = read.table(PathToLoad, sep="\t", header=TRUE, quote="")
+assign(x="SupportedCommands",value=SupportedCommands,env=.GlobalEnv)
+} # End function 'SupportedCommands'
+
+# Now do a little trick - call the function, whose final line 'assign()' replaces the function with the actual data frame under the same object name
+# This avoids the clutter of the various other variables created along the way to determine the SupportedCommands path, which could overlap and interfere with the user's variable names.
+SupportedCommands()
 
 ####################
 # praat() function #
@@ -329,30 +352,38 @@ ArgumentString = paste( UnderscoreSwapped, collapse=" ")
 # Adjust based on user operating system (OS) #
 ##############################################
 
-UserOS = .Platform$OS.type # "windows" for my Windows 8, "unix" for Wil's Mac OS 10.6 / Lion.
+UserOS = .Platform$OS.type # "windows" for a Windows 8, "unix" for Linux or Mac.
+# Linux vs. Mac can be distinguished by querying Sys.info()["sysname"], which returns "Windows", "Linux", or "Darwin" (=Mac).
+# (When Linux support is added, perhaps just use this instead?)
 
-# In Windows, R.home("library") is something like...
-# "C:/PROGRA~1/R/R-30~1.3/library"
-# ...whereas .libPaths() is...
-# "C:/Program Files/R/R-3.0.3/library"
-# Since the latter has a space (which doesn't work with the current implementation of the call to shell(), use the former.
+# In Windows, R.home("library") is something like "C:/PROGRA~1/R/R-30~1.3/library", which lacks a space, so this should always work fine.
+if( ! UserOS %in% c("windows","unix")){stop("Operating system not supported. .Platform$OS.type must be either 'windows' or 'unix'.")}
+if(UserOS == "windows"){ PraatPath = paste(R.home("library"),"PraatR","praatcon.exe",sep="/") }
+if(UserOS == "unix"   ){ PraatPath = "/Applications/Praat.app/Contents/MacOS/Praat" } # Presumably it will always be in this one fixed/stable location
 
-# On a Mac, R.home("library") is...
-# "/Library/Frameworks/R.framework/Resources/library"
-# ...whereas .libPaths() is...
-# "/Library/Frameworks/R.framework/Versions/3.0/Resources/library"
-# The former is not specific to a certain R version and merely redirects to the latter, hence use the latter.
+# Do a similar string of checks to how the SupportedCommands path was found
+# (Most of this code is copied from there.)
+LibraryDirectories = unique( c( R.home("library"), .libPaths() ) )
+nDirectories = length(LibraryDirectories)
 
-if(UserOS == "windows"){ LibraryPath=R.home("library"); PraatPath = paste(LibraryPath,"PraatR","praatcon.exe",sep="/") }
-if(UserOS == "unix"   ){ LibraryPath=.libPaths();       PraatPath = "/Applications/Praat.app/Contents/MacOS/Praat"} # Presumably it will always be in this one fixed/stable location
+# Add slashes if necessary
+LastCharacters = substring( LibraryDirectories,first=nchar(LibraryDirectories),last=nchar(LibraryDirectories) )
+EndWithSlash = LastCharacters == "/" # | LastCharacters == "\\"
+InterveningSlashes = rep("",times=)
+InterveningSlashes[!EndWithSlash] <- "/"
 
-# The documentation for '.Platform' says the following, suggesting it will *always* be one or the other.
-#  - character string, giving the Operating System (family) of the computer. One of "unix" or "windows". 
-# In my context, this means that Linux and Mac will both be treated the same. This is a problem given the path specified above, which contains 'MacOS' - which will clearly not work on Linux
-# I'll perhaps need to straighten this out (i.e. disentangle Mac from Linux) by querying other attributes of the OS with some combination of Sys.info() and .Platform.
+# Make list of possible file paths
+PossibleScriptPaths = paste(LibraryDirectories,InterveningSlashes,"PraatR/PraatScripts/",TargetScriptName,sep="")
 
-# The target script can be easily identified relative to the library path
-ScriptPath = paste(LibraryPath,"PraatR","PraatScripts",TargetScriptName,sep="/")
+# Find which ones exist
+ExistingPaths = file.exists(PossibleScriptPaths)
+
+# Issue an error message if the appropriate Praat script can not be found and stop computation
+if( sum(ExistingPaths)==0 ){ stop("Could not find the appropriate Praat script. Make sure PraatR is properly installed.") }
+
+# Use the first path that exists
+# Note that the order is 'unique( c( R.home("library"), .libPaths() ) )' (cf. code above)
+ScriptPath = PossibleScriptPaths[min( which(ExistingPaths) )]
 
 ###########################
 # Assemble command string #
@@ -409,3 +440,13 @@ if(UserOS == "unix"){ return(system(command=CommandString, intern=intern)) } # F
 } # End 'if this is a query command'
 
 } # End function
+
+###################
+# Welcome message #
+###################
+
+# Run this last in case something earlier above failed
+# Eventually have multiple calls to stop() above to ensure this won't be shown if it failed to load.
+
+cat("\n######################\n# Welcome to PraatR! #\n######################\n\nFor documentation on how to use PraatR and information on how to cite it,\n    visit the homepage at http://www.aaronalbin.com/praatr/\nPraatR is released under the the GNU General Public License: http://www.gnu.org/licenses/.\n\n\n")
+
