@@ -139,7 +139,7 @@ CommandType = as.character( SupportedCommands[RowIndex,"CommandType"] )
 # INPUT VALIDATION AND ARGUMENT DEFAULTING #
 ############################################
 
-# Argument [2]
+# Argument [2] (arguments)
 # Make sure that, if the 'arguments' argument(!) is provided, it is a list
 if(!missing(arguments)){
      if( class(arguments) != "list" ){ stop("The 'arguments' function must be a list.")}
@@ -147,16 +147,20 @@ if(!missing(arguments)){
 # Ultimately, this will need to be MUCH more rigid - checking the user's specified arguments against those from the SupportedCommands database to make sure everything lines up OK.
 # There *can* be arguments for 'Play' commands, so this is required even there.
 
-# Argument [3]
+# Argument [3] (input)
+
 # Make sure the input file actually exists on the user's hard drive.
 if( !file.exists(input) ){ stop(paste("The file specified as the 'input' argument does not exist:\n       ",input,sep="")) }
+# Also, make sure the path provided for 'input' does not contain any spaces
+SplitInput = strsplit(input,split="")[[1]]
+if( " " %in% SplitInput ){ stop("The file path provided for the 'input' argument must not contain spaces.\n  Perhaps rename the file or move it to a different folder.") }
 
 # - = - = - = - = - = - = - = - = - = - = - = - = - = - = - = - = 
 # = - = - = - = - = - = - = - = - = - = - = - = - = - = - = - = -
 
 if(CommandType=="Create"){
 
-# Argument [4]
+# Argument [4] (output)
 # If the output is left unspecified, then issue an error and stop computation.
 if( missing(output) ){ stop("For this command, you must specify a file path for the 'output' argument.") }
 # The user can name the output file itself whatever they want.
@@ -164,7 +168,7 @@ if( missing(output) ){ stop("For this command, you must specify a file path for 
 if( !file.exists( dirname(output) ) ){ stop(paste("The path in the 'output' argument includes a folder that does not exist:\n       ",dirname(output),sep="")) }
 # file.exists() works fine with directories. However, on Windows it must NOT end in a slash. dirname() does things correctly, so I'm fine.
 
-# Argument [5]
+# Argument [5] (overwrite)
 # Fill in 'overwrite' with its default of FALSE if left unspecified
 if(missing(overwrite)){overwrite=FALSE}
 # If the 'overwrite' argument is set to FALSE, then if the output file already exists, cease computation
@@ -214,7 +218,12 @@ if( file.exists(output) ){ stop(paste("This 'output' file already exists: (Consi
 
 if(CommandType=="Create" | CommandType=="Modify"){
 
-# Argument [6]
+# Argument [4] (output)
+# Make sure the path provided for 'output' does not contain any spaces
+SplitOutput = strsplit(output,split="")[[1]]
+if( " " %in% SplitOutput ){ stop("The file path provided for the 'output' argument must not contain spaces.\n  Perhaps rename the file or move it to a different folder.") }
+
+# Argument [6] (filetype)
 # Fill in 'filetype' with its default of "text" if left unspecified
 if(missing(filetype)){
 filetype="text"
@@ -225,7 +234,7 @@ if(!LegalFileType){stop("The 'filetype' argument must be \"text\", \"short\", or
 # If it is legal, do nothing and move on
 } # End if/else filetype is missing
 
-# Argument [7]
+# Argument [7] (simplify)
 # Argument 'simplify' should be missing. If not, issue a warning. If it is, fill it with a dummy '0' so something can be passed to Praat. (It must be boolean in order for the form to work.)
 if(!missing(simplify)){warning("For Create/Modify commands, leave 'simplify' unspecified; the supplied value has been ignored.")}else{simplify=FALSE}
 
@@ -236,7 +245,7 @@ if(!missing(simplify)){warning("For Create/Modify commands, leave 'simplify' uns
 
 if(CommandType=="Query"){
 
-# Argument [4]
+# Argument [4] (output)
 # If something is specified for 'output', issue a warning that the specified output argument has been ignored, but still proceed normally.
 if( !missing(output) ){
 warning("For Query commands, leave 'output' unspecified; the supplied value has been ignored.")
@@ -244,16 +253,16 @@ warning("For Query commands, leave 'output' unspecified; the supplied value has 
 output="X"
 } # End if/else
 
-# Argument [5]
+# Argument [5] (overwrite)
 # Argument 'overwrite' should be missing. If not, issue a warning.
 if(!missing(overwrite)){warning("For Query commands, leave 'overwrite' unspecified; the supplied value has been ignored.")}
  # No need for dummy variable since not passed to Praat
  
-# Argument [6]
+# Argument [6] (filetype)
 # Argument 'filetype' should be missing. If not, issue a warning. If it is, fill it with a dummy 'X' so something can be passed to Praat
 if(!missing(filetype)){warning("For Query commands, leave 'filetype' unspecified; the supplied value has been ignored.")}else{filetype="X"}
 
-# Argument [7]
+# Argument [7] (simplify)
 # Fill in 'simplify' with its default of FALSE if left unspecified
 if(missing(simplify)){simplify=FALSE}
 
@@ -265,18 +274,18 @@ if(missing(simplify)){simplify=FALSE}
 if(CommandType=="Play"){
 # All four of the remaining commands are moot, so do similar things to above
 
-# Argument [4]
+# Argument [4] (output)
 if( !missing(output) ){ warning("For Play commands, leave 'output' unspecified; the supplied value has been ignored.")
 }else{ output="X" } # Dummy
 
-# Argument [5]
+# Argument [5] (overwrite)
 if(!missing(overwrite)){warning("For Play commands, leave 'overwrite' unspecified; the supplied value has been ignored.")} # No need for dummy
 
-# Argument [6]
+# Argument [6] (filetype)
 if(!missing(filetype)){warning("For Play commands, leave 'filetype' unspecified; the supplied value has been ignored.")
 }else{filetype="X"} # Dummy
 
-# Argument [7]
+# Argument [7] (simplify)
 if(!missing(simplify)){warning("For Play commands, leave 'simplify' unspecified; the supplied value has been ignored.")
 }else{simplify=FALSE} # Dummy
 
