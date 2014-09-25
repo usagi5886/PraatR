@@ -90,11 +90,14 @@ overwrite,
 # [6]
 filetype,
 # Only applicable if the user chooses a 'Create' or 'Modify' command.
-# Determines what file format the output text file will have
-# Three choices:
-# "text"   = Save as text file...
-# "short"  = Save as short text file...
-# "binary" = Save as binary file...
+# Determines what file format the output text file will have.
+# All Create and Modify commands have three choices:
+# "text"        = Save as text file...
+# "short text"  = Save as short text file... (This can also be abbreviated to just "short".)
+# "binary"      = Save as binary file...
+
+# In addition, certain special file types are also allowed for certain commands (e.g. saving a Sound object in WAV format).
+# See the 'Supported Commands' page on the PraatR site for information on which file types are allowed for which commands.
 
 # [7]
 simplify
@@ -125,15 +128,15 @@ if( !ValidCommand ){ stop("This command is not supported by the present version 
 # Within the current set of supported commands, there are three exceptions.
 # (1) The command 'Rotate...' is of type 'Modify' for a Configuration or Polygon object but of type 'Create' for a Permutation object.
 # (2-3) The commands 'Filter (pass Hann band)...' and 'Filter (stop Hann band)...' are of type 'Modify' for a Spectrum object but of type 'Create' for a Sound object.
-# Fortunately, these conflations do not involve queries.
-# Thus, I can safely assume that randomly sampling one of the two in these ambiguous cases will not obscure the [+/-query] distinction.
-# (I checked and everything I say above doesn't change based on the inclusion of 'Play' commands.)
+# Fortunately, these conflations do not involve queries (which means that the execution of the command itself is fine and only the input validation might be messed up).
+# Thus, it is safe to randomly sample one of the two in these ambiguous cases (via the indexing of [1] in the following line of code).
 
 RowIndex = which( command == SupportedCommands$CommandName )[1]
 # For the three commands mentioned above, this will arbitrarily choose whichever comes first in terms of the ordering of the rows in the dataframe.
 
 CommandType = as.character( SupportedCommands[RowIndex,"CommandType"] )
-# At present, only three types are supported: Create, Modify, and Query.
+# At present, only four types are supported: 'Create', 'Modify', 'Query', and 'Play'.
+# The four yet un-implemented command types are 'Draw', 'Editor', 'Help', and 'Instructions'.
 
 ############################################
 # INPUT VALIDATION AND ARGUMENT DEFAULTING #
@@ -228,10 +231,27 @@ if( " " %in% SplitOutput ){ stop("The file path provided for the 'output' argume
 if(missing(filetype)){
 filetype="text"
 }else{ # i.e. if something has been supplied
-# Check to see whether it is a legal possibility for the file type
-LegalFileType = ( filetype %in% c("text","short","binary") )
-if(!LegalFileType){stop("The 'filetype' argument must be \"text\", \"short\", or \"binary\".")}
-# If it is legal, do nothing and move on
+
+# First, if the user specified filetype to be "short", over-write the variable with the full, de-abbreviated alias "short form"
+if(filetype=="short"){filetype="short text"}
+
+# Second, determine which special file types are available for this command (if any)
+SpecialFileTypes_String = as.character( SupportedCommands[RowIndex,"SpecialFileTypes"] )
+if(identical(SpecialFileTypes_String,"(Sound formats)")){SpecialFileTypes_String=c("WAV, AIFF, AIFC, Next/Sun, NIST, FLAC, Kay sound, 24-bit WAV, 32-bit WAV, raw 8-bit signed, raw 8-bit unsigned, raw 16-bit big-endian, raw 16-bit little-endian, raw 24-bit big-endian, raw 24-bit little-endian, raw 32-bit big-endian, raw 32-bit little-endian") }
+if(is.na(SpecialFileTypes_String)){ SpecialFileTypes=NULL }else{ SpecialFileTypes=strsplit(SpecialFileTypes_String,split=", ")[[1]] }
+
+# Third, determine if the provided file type is a legal possibility (either one of the standard three or one of the special file types for this command)
+LegalFileType = filetype %in% append( c( "text", "short text", "binary"), # The standard three. Note the lack of "short" (since that was already handled above)
+                                       SpecialFileTypes ) # If SpecialFileTypes is NULL, this will append nothing, i.e. the result will be a vector with just the standard three.
+
+# Stop computation if the specified filetype it is not legal
+if(!LegalFileType){ stop("The 'filetype' argument must be \"text\", \"short text\"/\"short\", \"binary\",\n  or one of the special formats listed on the PraatR homepage.") }
+# If it is a legal file type, do nothing and move on
+
+# Finally, prepare the filetype for being passed to the shell command
+filetype = gsub(filetype, pattern=" ", replacement="_") # Convert all spaces to underscores (e.g. "short text" -> "short_text")
+filetype = gsub(filetype, pattern="/", replacement=".") # Convert all slashes to periods (e.g. "Next/Sun" -> "Next.Sun")
+
 } # End if/else filetype is missing
 
 # Argument [7] (simplify)
@@ -454,8 +474,6 @@ if(UserOS == "unix"){ return(system(command=CommandString, intern=intern)) } # F
 # Welcome message #
 ###################
 
-# Run this last in case something earlier above failed
-# Eventually have multiple calls to stop() above to ensure this won't be shown if it failed to load.
+# Run this last to ensure this won't be shown if something earlier above failed for some reason.
 
-cat("\n######################\n# Welcome to PraatR! #\n######################\n\nFor documentation on how to use PraatR and information on how to cite it,\n    visit the homepage at http://www.aaronalbin.com/praatr/\nPraatR is released under the the GNU General Public License: http://www.gnu.org/licenses/.\n\n\n")
-
+cat("\n##############################\n# PraatR loaded successfully #\n##############################\n\nFor documentation on how to use PraatR and information on how to cite it,\n    visit the homepage at http://www.aaronalbin.com/praatr/\n\n") # PraatR is released under the the GNU General Public License: http://www.gnu.org/licenses/.
