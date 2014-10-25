@@ -1,0 +1,15 @@
+NEWS in package 'PraatR'
+
+2.0 10-24-2014
+    o	Released as an R package to allow simpler loading simply by calling 'library("PraatR")'
+    o	Created documentation for the package, e.g. the help file displayed when typing '?praat'
+
+1.2	09-24-2014
+    o	Added additional input validation for enforcing input/output paths not to contain spaces
+    o	Added in functionality for additional 'special' output file types (e.g. WAV)
+
+1.1	08-07-2014
+    o	Fixed problem with references to R library directory - .libPaths() vs. R.home("library")
+
+1.0	05-05-2014
+    o	Initial public release

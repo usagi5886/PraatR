@@ -1,9 +1,9 @@
-############
-# PraatR.r #
-############
+###########
+# praat.R #
+###########
 
 # Created by: Aaron Albin
-# http://www.aaronalbin.com/praatr/
+# http://www.aaronalbin.com/
 
 ################################################################################################
 # This program is free software. You can redistribute it and/or modify it under the terms of   #
@@ -14,54 +14,7 @@
 # For details on the GNU General Public License, see: http://www.gnu.org/licenses/             #
 ################################################################################################
 
-###########################
-# Load supported commands #
-###########################
-
-SupportedCommands = function(){
-# Search for the 'SupportedCommands' file in all possible locations
-LibraryDirectories = unique( c( R.home("library"), .libPaths() ) )
-
-# For reference, on a Mac, R.home("library") is...
-# "/Library/Frameworks/R.framework/Resources/library"
-# ...whereas one of the directories included in the vector .libPaths() should be something like...
-# "/Library/Frameworks/R.framework/Versions/3.0/Resources/library"
-
-nDirectories = length(LibraryDirectories)
-
-# Add slashes if necessary
-LastCharacters = substring( LibraryDirectories,first=nchar(LibraryDirectories),last=nchar(LibraryDirectories) )
-EndWithSlash = LastCharacters == "/" # | LastCharacters == "\\"
-InterveningSlashes = rep("",times=)
-InterveningSlashes[!EndWithSlash] <- "/"
-
-# Make list of possible file paths
-SupportedCommands_Paths = paste(LibraryDirectories,InterveningSlashes,"PraatR/SupportedCommands.txt",sep="")
-
-# Find which ones exist
-ExistingPaths = file.exists(SupportedCommands_Paths)
-
-# Issue an error message if SupportedCommands.txt could not be found and stop computation
-if( sum(ExistingPaths)==0 ){ stop("Could not find 'SupportedCommands.txt'. Make sure PraatR is properly installed.") }
-
-# Use the first path that exists
-# Note that the order is 'unique( c( R.home("library"), .libPaths() ) )' (cf. code above)
-PathToLoad = SupportedCommands_Paths[min( which(ExistingPaths) )]
-
-SupportedCommands = read.table(PathToLoad, sep="\t", header=TRUE, quote="")
-assign(x="SupportedCommands",value=SupportedCommands,env=.GlobalEnv)
-} # End function 'SupportedCommands'
-
-# Now do a little trick - call the function, whose final line 'assign()' replaces the function with the actual data frame under the same object name
-# This avoids the clutter of the various other variables created along the way to determine the SupportedCommands path, which could overlap and interfere with the user's variable names.
-SupportedCommands()
-
-####################
-# praat() function #
-####################
-
 praat = function( # Begin argument list
-
 # [1]
 command,
 # A character string indicating what command should be executed
@@ -232,7 +185,7 @@ if(missing(filetype)){
 filetype="text"
 }else{ # i.e. if something has been supplied
 
-# First, if the user specified filetype to be "short", over-write the variable with the full, de-abbreviated alias "short form"
+# First, if the user specified filetype to be "short", over-write the variable with the full, de-abbreviated alias "short text"
 if(filetype=="short"){filetype="short text"}
 
 # Second, determine which special file types are available for this command (if any)
@@ -245,7 +198,7 @@ LegalFileType = filetype %in% append( c( "text", "short text", "binary"), # The 
                                        SpecialFileTypes ) # If SpecialFileTypes is NULL, this will append nothing, i.e. the result will be a vector with just the standard three.
 
 # Stop computation if the specified filetype it is not legal
-if(!LegalFileType){ stop("The 'filetype' argument must be \"text\", \"short text\"/\"short\", \"binary\",\n  or one of the special formats listed on the PraatR homepage.") }
+if(!LegalFileType){ stop("The 'filetype' argument must be \"text\", \"short text\"/\"short\", \"binary\",\n  or one of the special formats listed on the PraatR website.") }
 # If it is a legal file type, do nothing and move on
 
 # Finally, prepare the filetype for being passed to the shell command
@@ -387,8 +340,15 @@ UserOS = .Platform$OS.type # "windows" for a Windows 8, "unix" for Linux or Mac.
 
 # In Windows, R.home("library") is something like "C:/PROGRA~1/R/R-30~1.3/library", which lacks a space, so this should always work fine.
 if( ! UserOS %in% c("windows","unix")){stop("Operating system not supported. .Platform$OS.type must be either 'windows' or 'unix'.")}
-if(UserOS == "windows"){ PraatPath = paste(R.home("library"),"PraatR","praatcon.exe",sep="/") }
-if(UserOS == "unix"   ){ PraatPath = "/Applications/Praat.app/Contents/MacOS/Praat" } # Presumably it will always be in this one fixed/stable location
+if(UserOS == "windows"){
+  PraatPath = paste(R.home("library"),"PraatR","praatcon.exe",sep="/");
+  if(!file.exists(PraatPath)){ stop(paste("Praat not found. Make sure praatcon.exe has been placed in this folder:\n   ",find.package("PraatR"),sep="")) } # Use find.package("PraatR") rather than 'PraatPath' in order to make the result more human-readable
+} # End 'if Windows'
+if(UserOS == "unix" ){
+  PraatPath = "/Applications/Praat.app/Contents/MacOS/Praat"
+  # Presumably it will always be in this one fixed/stable location, but check just in case:
+  if(!file.exists("/Applications/Praat.app")){ stop("Praat not found. Make sure Praat is installed in this location:\n   /Applications/Praat.app") }
+}
 
 # Do a similar string of checks to how the SupportedCommands path was found
 # (Most of this code is copied from there.)
@@ -422,7 +382,6 @@ ScriptPath = PossibleScriptPaths[min( which(ExistingPaths) )]
 
 # Don't make things if/else (between Create/Modify/Play and Query for right now because I'm not sure whether I'll include other CommandTypes in the future... And this is safer and more transparent anyway.
 
-# Use shQuote() for all file paths to protect in case they contain spaces
 if(CommandType == "Create" | CommandType == "Modify" | CommandType == "Play"){
 # These three are treated 100% equivalently for the time being, but it's in principle possible to separate them down the road
 
@@ -468,12 +427,4 @@ if(UserOS == "unix"){ return(system(command=CommandString, intern=intern)) } # F
 
 } # End 'if this is a query command'
 
-} # End function
-
-###################
-# Welcome message #
-###################
-
-# Run this last to ensure this won't be shown if something earlier above failed for some reason.
-
-cat("\n##############################\n# PraatR loaded successfully #\n##############################\n\nFor documentation on how to use PraatR and information on how to cite it,\n    visit the homepage at http://www.aaronalbin.com/praatr/\n\n") # PraatR is released under the the GNU General Public License: http://www.gnu.org/licenses/.
+}

@@ -1,0 +1,15 @@
+Package: PraatR
+Type: Package
+Title: An architecture for controlling the phonetics software 'Praat'
+Version: 2.0
+Date: 2014-10-24
+Author: Aaron Albin
+Maintainer: Aaron Albin <usagi5886@hotmail.com>
+Description: The function 'praat()' sends a shell command to the operating
+  system that invokes the command-line form of Praat with an associated
+  Praat script. This script imports a file, applies a Praat command to it,
+  and then either brings the output directly into R or exports the output as
+  a textfile.
+License: GPL (>= 3)
+URL: http://www.aaronalbin.com/praatr/
+LazyData: true

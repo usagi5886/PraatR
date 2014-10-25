@@ -1,0 +1,11 @@
+citHeader("Cite PraatR using the following information (formatting as necessary):")
+
+bibentry(bibtype = "Article",
+         author = person("Aaron", "Albin"),
+         year = "2014",
+         title = "PraatR: An architecture for controlling the phonetics software \"Praat\" with the R programming language",
+         journal = "Journal of the Acoustical Society of America",
+         volume = "135",
+         number = "4",
+         pages = "2198",
+         url = "http://www.aaronalbin.com/praatr/")
