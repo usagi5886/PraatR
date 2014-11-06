@@ -1,5 +1,9 @@
 NEWS in package 'PraatR'
 
+2.1 11-05-2014
+    o	Added support for Linux
+    o	Fixed bug where commands with parentheses would issue an error (Mac/Linux only)
+
 2.0 10-24-2014
     o	Released as an R package to allow simpler loading simply by calling 'library("PraatR")'
     o	Created documentation for the package, e.g. the help file displayed when typing '?praat'

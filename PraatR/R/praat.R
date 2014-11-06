@@ -334,24 +334,41 @@ ArgumentString = paste( UnderscoreSwapped, collapse=" ")
 # Adjust based on user operating system (OS) #
 ##############################################
 
-UserOS = .Platform$OS.type # "windows" for a Windows 8, "unix" for Linux or Mac.
-# Linux vs. Mac can be distinguished by querying Sys.info()["sysname"], which returns "Windows", "Linux", or "Darwin" (=Mac).
-# (When Linux support is added, perhaps just use this instead?)
+OSType = .Platform$OS.type # "windows" for Windows, "unix" for Linux or Mac
+SystemName = Sys.info()["sysname"] # "Windows", "Linux", or "Darwin" (=Mac)
 
-# In Windows, R.home("library") is something like "C:/PROGRA~1/R/R-30~1.3/library", which lacks a space, so this should always work fine.
-if( ! UserOS %in% c("windows","unix")){stop("Operating system not supported. .Platform$OS.type must be either 'windows' or 'unix'.")}
-if(UserOS == "windows"){
-  PraatPath = paste(R.home("library"),"PraatR","praatcon.exe",sep="/");
-  if(!file.exists(PraatPath)){ stop(paste("Praat not found. Make sure praatcon.exe has been placed in this folder:\n   ",find.package("PraatR"),sep="")) } # Use find.package("PraatR") rather than 'PraatPath' in order to make the result more human-readable
-} # End 'if Windows'
-if(UserOS == "unix" ){
-  PraatPath = "/Applications/Praat.app/Contents/MacOS/Praat"
-  # Presumably it will always be in this one fixed/stable location, but check just in case:
-  if(!file.exists("/Applications/Praat.app")){ stop("Praat not found. Make sure Praat is installed in this location:\n   /Applications/Praat.app") }
-}
+if( OSType=="windows" & SystemName=="Windows" ){
+	UserOS = "Windows" # For later down below in the code
+	PraatPath = paste(R.home("library"),"PraatR","praatcon.exe",sep="/")
+	# In Windows, R.home("library") is something like "C:/PROGRA~1/R/R-30~1.3/library", which lacks a space, so this should always work fine.
+	if(!file.exists(PraatPath)){ stop(paste("Praat not found. Make sure praatcon.exe has been placed in this folder:\n   ",find.package("PraatR"),sep="")) } # Use find.package("PraatR") rather than 'PraatPath' in order to make the result more human-readable
+}else{
+	if( OSType=="unix" & SystemName=="Darwin" ){
+		UserOS = "Mac" # For later down below in the code
+		PraatPath = "/Applications/Praat.app/Contents/MacOS/Praat"
+		# Presumably it will always be in this one fixed/stable location, but check just in case:
+		if(!file.exists("/Applications/Praat.app")){ stop("Praat not found. Make sure Praat is installed in this location:\n   /Applications/Praat.app") }
+	}else{
+		if( OSType=="unix" & SystemName=="Linux" ){
+			UserOS = "Linux" # For later down below in the code
+			PathSeparator = .Platform$path.sep # For Linux, should always be ":" (colon)
+			SystemPathList = Sys.getenv("PATH") # Something like "/home/myusername/bin:/usr/local/bin:/usr/bin:/bin:/usr/local/games:/usr/games"
+			PossiblePraatLocations = paste(strsplit(SystemPathList,split=PathSeparator)[[1]],"praat",sep="/")
+			PraatFound = sapply(PossiblePraatLocations,FUN=file.exists)
+			if(sum(PraatFound)==0){stop("Praat executable not found. (Make sure it is in your PATH.)")}
+			#FoundIndex = which(PraatFound)[1] # If it's in more than one of the directories, use the first one in that order
+			#PraatPath = PossiblePraatLocations[FoundIndex] # Usually "/usr/bin/praat" or "/usr/local/bin/praat", depending on how the user has installed Praat
+			PraatPath = "praat"
+		}else{
+			stop("Operating system not supported. For support, feel free to e-mail the creator of PraatR.")
+		} # End 'if/else Linux'
+	} # End 'if/else Mac'
+} # End 'if/else Windows'
 
-# Do a similar string of checks to how the SupportedCommands path was found
-# (Most of this code is copied from there.)
+##################################
+# Determine path to Praat script #
+##################################
+
 LibraryDirectories = unique( c( R.home("library"), .libPaths() ) )
 nDirectories = length(LibraryDirectories)
 
@@ -399,8 +416,14 @@ CommandString = paste( PraatPath,
 intern = FALSE # Do *not* capture anything from the Info Window of Praat (for bringing back into R)
 
 # Now, finally issue the instruction to the OS
-if(UserOS == "windows"){ shell(cmd=CommandString, intern=intern) } # For Windows
-if(UserOS == "unix"){ system(command=CommandString, intern=intern) } # For Unix/Mac
+if( UserOS == "Windows" ){ shell(cmd=CommandString, intern=intern) }
+if( UserOS == "Mac" | UserOS == "Linux" ){
+# Escape any parentheses in the entire command string.
+CommandStringA = gsub(CommandString,pattern="(",replacement="\\(",fixed=TRUE)
+CommandStringB = gsub(CommandStringA,pattern=")",replacement="\\)",fixed=TRUE)
+system(command=CommandStringB, intern=intern)
+} # End 'if Mac'
+
 # Eventually, somehow detailedly check the response status from this function call and issue custom messages accordingly to help the user troubleshoot if there are any problems?
 
 } # End 'if this is a query command'
@@ -422,8 +445,13 @@ CommandString = paste( PraatPath,
 intern = TRUE # This indicates that the ultimate contents of the Info Window in Praat should be captured and brought back into R
 
 # Now, finally issue the instruction to the OS, and return the result
-if(UserOS == "windows"){ return(shell(cmd=CommandString, intern=intern)) } # For Windows
-if(UserOS == "unix"){ return(system(command=CommandString, intern=intern)) } # For Unix/Mac
+if( UserOS == "Windows" ){ return(shell(cmd=CommandString, intern=intern)) }
+if( UserOS == "Mac" | UserOS == "Linux" ){
+# Escape any parentheses in the entire command string.
+CommandStringA = gsub(CommandString,pattern="(",replacement="\\(",fixed=TRUE)
+CommandStringB = gsub(CommandStringA,pattern=")",replacement="\\)",fixed=TRUE)
+return(system(command=CommandStringB, intern=intern))
+} # End 'if Mac'
 
 } # End 'if this is a query command'
 

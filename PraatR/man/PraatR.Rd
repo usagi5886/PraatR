@@ -1,4 +1,4 @@
-\name{PraatR-package}
+\name{PraatR}
 
 \alias{PraatR}
 
@@ -13,9 +13,9 @@ PraatR is an architecture for controlling the phonetics software Praat (\url{htt
 \tabular{ll}{
 Package: \tab PraatR\cr
 Type: \tab Package\cr
-Version: \tab 2.0\cr
-Date: \tab 2014-10-24\cr
-License: \tab GNU General Public License\cr
+Version: \tab 2.1\cr
+Date: \tab 2014-11-05\cr
+License: \tab GNU General Public License (Version 3 or later)\cr
 }
 For information on how to use \code{\link{praat}()}, see \url{ http://www.aaronalbin.com/praatr/ }. For information about the various commands that can be executed, see \url{ http://www.aaronalbin.com/praatr/commands.html }.
 }
@@ -33,4 +33,3 @@ Albin, A. (2014). PraatR: An architecture for controlling the phonetics software
 \seealso{
 \code{\link{praat}}
 }
-

@@ -91,16 +91,11 @@ Aaron Albin (\url{http://www.aaronalbin.com/})
 }
 
 \note{
-PraatR is currently only supported on Windows and Mac.
-\itemize{
-\item{In order for PraatR to work on Windows, you must have downloaded a separate file called \code{praatcon.exe} and placed it your PraatR library folder.}
-\item{In order for PraatR to work on Mac, Praat needs to be installed on your computer in the following location: \code{/Applications/Praat.app}.}
-}
-For details, see the 'Installation' section of the PraatR homepage.
+Further information - including installation instructions, a basic tutorial, and the list of supported commands - is available at the PraatR homepage: \url{http://www.aaronalbin.com/praatr/}.
 }
 
 \seealso{
-Further information - including installation instructions, a basic tutorial, and the list of supported commands - is available at the PraatR homepage: \url{http://www.aaronalbin.com/praatr/}.
+\code{\link{PraatR}}
 }
 
 \examples{
