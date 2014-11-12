@@ -84,8 +84,10 @@ if( !ValidCommand ){ stop("This command is not supported by the present version 
 # Fortunately, these conflations do not involve queries (which means that the execution of the command itself is fine and only the input validation might be messed up).
 # Thus, it is safe to randomly sample one of the two in these ambiguous cases (via the indexing of [1] in the following line of code).
 
-RowIndex = which( command == SupportedCommands$CommandName )[1]
+RowIndices = which( command == SupportedCommands$CommandName ) # All of them
+RowIndex = RowIndices[1] # Just the first
 # For the three commands mentioned above, this will arbitrarily choose whichever comes first in terms of the ordering of the rows in the dataframe.
+# Special output filetypes are handled later below.
 
 CommandType = as.character( SupportedCommands[RowIndex,"CommandType"] )
 # At present, only four types are supported: 'Create', 'Modify', 'Query', and 'Play'.
@@ -189,13 +191,37 @@ filetype="text"
 if(filetype=="short"){filetype="short text"}
 
 # Second, determine which special file types are available for this command (if any)
-SpecialFileTypes_String = as.character( SupportedCommands[RowIndex,"SpecialFileTypes"] )
-if(identical(SpecialFileTypes_String,"(Sound formats)")){SpecialFileTypes_String=c("WAV, AIFF, AIFC, Next/Sun, NIST, FLAC, Kay sound, 24-bit WAV, 32-bit WAV, raw 8-bit signed, raw 8-bit unsigned, raw 16-bit big-endian, raw 16-bit little-endian, raw 24-bit big-endian, raw 24-bit little-endian, raw 32-bit big-endian, raw 32-bit little-endian") }
-if(is.na(SpecialFileTypes_String)){ SpecialFileTypes=NULL }else{ SpecialFileTypes=strsplit(SpecialFileTypes_String,split=", ")[[1]] }
+# If multiple matches are found in the database, retrieve all of them
+SpecialFileTypes_String = as.character( SupportedCommands[RowIndices,"SpecialFileTypes"] )
+
+# Strip out any NAs
+SpecialFileTypes_NoNAs = as.character( na.omit(SpecialFileTypes_String) )
+# If there is nothing left, set it to NULL
+if(length(SpecialFileTypes_NoNAs)==0){
+SpecialFileTypes=NULL
+}else{
+
+# Make a sorted, unique list of everything across all returned rows from SupportedCommands
+SpecialFileTypes_Unique = sort(unique( SpecialFileTypes_NoNAs ))
+
+# Swap out the dummy '(SoundFormats)' with the actual list of possibilities
+if( "(Sound formats)" %in% SpecialFileTypes_Unique ){
+SpecialFileTypes_Unique[SpecialFileTypes_Unique=="(Sound formats)"] <- "WAV, AIFF, AIFC, Next/Sun, NIST, FLAC, Kay sound, 24-bit WAV, 32-bit WAV, raw 8-bit signed, raw 8-bit unsigned, raw 16-bit big-endian, raw 16-bit little-endian, raw 24-bit big-endian, raw 24-bit little-endian, raw 32-bit big-endian, raw 32-bit little-endian"
+} # End 'if "(Sound formats)" was found'
+
+# If there is a vector at this point, concatenate it together
+SpecialFileTypes_Concatenated = paste( SpecialFileTypes_Unique, collapse=", " )
+# This does nothing if 'SpecialFileTypes_Unique' is of length 1
+
+SpecialFileTypes=strsplit(SpecialFileTypes_Concatenated,split=", ")[[1]]
+
+} # End 'if/else all entries were NA
 
 # Third, determine if the provided file type is a legal possibility (either one of the standard three or one of the special file types for this command)
 LegalFileType = filetype %in% append( c( "text", "short text", "binary"), # The standard three. Note the lack of "short" (since that was already handled above)
                                        SpecialFileTypes ) # If SpecialFileTypes is NULL, this will append nothing, i.e. the result will be a vector with just the standard three.
+# Note that if there are multiple matches for the command name in the database (e.g. for a general-purpose command like 'Scale times by...'), it leniently allows all of them.
+# At present, it is the user's responsibility to make sure they are doing the right thing in these (relatively uncommon?) cases.
 
 # Stop computation if the specified filetype it is not legal
 if(!LegalFileType){ stop("The 'filetype' argument must be \"text\", \"short text\"/\"short\", \"binary\",\n  or one of the special formats listed on the PraatR website.") }

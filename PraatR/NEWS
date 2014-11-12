@@ -1,5 +1,8 @@
 NEWS in package 'PraatR'
 
+2.2 11-12-2014
+    o	Fixed bug in checking whether user's provided special output file type is allowed
+
 2.1 11-05-2014
     o	Added support for Linux
     o	Fixed bug where commands with parentheses would issue an error (Mac/Linux only)
