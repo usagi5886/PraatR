@@ -356,6 +356,21 @@ ArgumentString = paste( UnderscoreSwapped, collapse=" ")
 
 } # End if/else arguments are missing from the function call
 
+##################################
+# Identify R library directories #
+##################################
+
+# This is necessary in case the user has multiple package folders (e.g. on Windows with RStudio installed)
+LibraryDirectories = unique( c( R.home("library"), .libPaths() ) )
+# On Windows, R.home("library") is something like "C:/PROGRA~1/R/R-30~1.3/library", which lacks a space, so this will work fine.
+# On Windows with RStudio, the only path with a space is listed last, which is safely ranked low enough not to ever be needed.
+
+# Add slashes if necessary
+LastCharacters = substring( LibraryDirectories,first=nchar(LibraryDirectories),last=nchar(LibraryDirectories) )
+EndWithSlash = LastCharacters == "/" # The functions in the previous line of code do not output "\\" on Windows.
+InterveningSlashes = rep("",times=)
+InterveningSlashes[!EndWithSlash] <- "/"
+
 ##############################################
 # Adjust based on user operating system (OS) #
 ##############################################
@@ -365,9 +380,13 @@ SystemName = Sys.info()["sysname"] # "Windows", "Linux", or "Darwin" (=Mac)
 
 if( OSType=="windows" & SystemName=="Windows" ){
 	UserOS = "Windows" # For later down below in the code
-	PraatPath = paste(R.home("library"),"PraatR","praatcon.exe",sep="/")
-	# In Windows, R.home("library") is something like "C:/PROGRA~1/R/R-30~1.3/library", which lacks a space, so this should always work fine.
-	if(!file.exists(PraatPath)){ stop(paste("Praat not found. Make sure praatcon.exe has been placed in this folder:\n   ",find.package("PraatR"),sep="")) } # Use find.package("PraatR") rather than 'PraatPath' in order to make the result more human-readable
+	# Make list of possible file paths and find which ones exist
+	PossiblePraatPaths = paste(LibraryDirectories,InterveningSlashes,"PraatR/praatcon.exe",sep="")
+	ExistingPraatPaths = file.exists(PossiblePraatPaths)
+	# If praatcon.exe can't be found anywhere, issue an error message and stop computation
+	if( sum(ExistingPraatPaths)==0 ){ stop("Could not find praatcon.exe. Make sure PraatR is properly installed.") }
+	# Use the first path that exists
+	PraatPath = PossiblePraatPaths[min( which(ExistingPraatPaths) )]
 }else{
 	if( OSType=="unix" & SystemName=="Darwin" ){
 		UserOS = "Mac" # For later down below in the code
@@ -395,27 +414,15 @@ if( OSType=="windows" & SystemName=="Windows" ){
 # Determine path to Praat script #
 ##################################
 
-LibraryDirectories = unique( c( R.home("library"), .libPaths() ) )
-nDirectories = length(LibraryDirectories)
-
-# Add slashes if necessary
-LastCharacters = substring( LibraryDirectories,first=nchar(LibraryDirectories),last=nchar(LibraryDirectories) )
-EndWithSlash = LastCharacters == "/" # | LastCharacters == "\\"
-InterveningSlashes = rep("",times=)
-InterveningSlashes[!EndWithSlash] <- "/"
-
-# Make list of possible file paths
+# Make list of possible file paths and find which ones exist
 PossibleScriptPaths = paste(LibraryDirectories,InterveningSlashes,"PraatR/PraatScripts/",TargetScriptName,sep="")
+ExistingScriptPaths = file.exists(PossibleScriptPaths)
 
-# Find which ones exist
-ExistingPaths = file.exists(PossibleScriptPaths)
-
-# Issue an error message if the appropriate Praat script can not be found and stop computation
-if( sum(ExistingPaths)==0 ){ stop("Could not find the appropriate Praat script. Make sure PraatR is properly installed.") }
+# If the appropriate Praat script can't be found anywhere, issue an error message  and stop computation
+if( sum(ExistingScriptPaths)==0 ){ stop("Could not find the appropriate Praat script. Make sure PraatR is properly installed.") }
 
 # Use the first path that exists
-# Note that the order is 'unique( c( R.home("library"), .libPaths() ) )' (cf. code above)
-ScriptPath = PossibleScriptPaths[min( which(ExistingPaths) )]
+ScriptPath = PossibleScriptPaths[min( which(ExistingScriptPaths) )]
 
 ###########################
 # Assemble command string #

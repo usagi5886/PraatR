@@ -1,5 +1,8 @@
 NEWS in package 'PraatR'
 
+2.3 02-16-2015
+    o	Fixed bug in finding praatcon.exe on Windows if RStudio is installed
+
 2.2 11-12-2014
     o	Fixed bug in checking whether user's provided special output file type is allowed
 
