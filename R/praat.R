@@ -381,7 +381,7 @@ SystemName = Sys.info()["sysname"] # "Windows", "Linux", or "Darwin" (=Mac)
 if( OSType=="windows" & SystemName=="Windows" ){
 	UserOS = "Windows" # For later down below in the code
 	# Make list of possible file paths and find which ones exist
-	PossiblePraatPaths = paste(LibraryDirectories,InterveningSlashes,"PraatR/praatcon.exe",sep="")
+	PossiblePraatPaths = paste(LibraryDirectories,InterveningSlashes,"PraatR/praat.exe",sep="")
 	ExistingPraatPaths = file.exists(PossiblePraatPaths)
 	# If praatcon.exe can't be found anywhere, issue an error message and stop computation
 	if( sum(ExistingPraatPaths)==0 ){ stop("Could not find praatcon.exe. Make sure PraatR is properly installed.") }
