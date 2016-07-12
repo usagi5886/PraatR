@@ -1,5 +1,8 @@
 NEWS in package 'PraatR'
 
+2.4 07-12-2016
+    o	Updated package to be compatible with Praat version 6.0 and later
+
 2.3 02-16-2015
     o	Fixed bug in finding praatcon.exe on Windows if RStudio is installed
 

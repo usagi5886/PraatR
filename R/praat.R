@@ -378,15 +378,48 @@ InterveningSlashes[!EndWithSlash] <- "/"
 OSType = .Platform$OS.type # "windows" for Windows, "unix" for Linux or Mac
 SystemName = Sys.info()["sysname"] # "Windows", "Linux", or "Darwin" (=Mac)
 
+# By default, assume the relevant version of Praat being used for PraatR is *not* praatcon.exe
+# (praatcon.exe is only used on Windows and only if the user has an outdated version of Praat.)
+UsingPraatcon = FALSE
+
+# Likewise, assume that the "--run" flag *will* be used.
+# (This is over-rided only if the user is using praatcon.exe)
+RunText = "--run"
+
 if( OSType=="windows" & SystemName=="Windows" ){
 	UserOS = "Windows" # For later down below in the code
-	# Make list of possible file paths and find which ones exist
-	PossiblePraatPaths = paste(LibraryDirectories,InterveningSlashes,"PraatR/praatcon.exe",sep="")
-	ExistingPraatPaths = file.exists(PossiblePraatPaths)
-	# If praatcon.exe can't be found anywhere, issue an error message and stop computation
-	if( sum(ExistingPraatPaths)==0 ){ stop("Could not find praatcon.exe. Make sure PraatR is properly installed.") }
-	# Use the first path that exists
-	PraatPath = PossiblePraatPaths[min( which(ExistingPraatPaths) )]
+
+	# Make list of possible file paths to Praat-related executables, namely:
+	# - Praat.exe (version 6.0.01 and on), or
+	# - praatcon.exe (Version 5.4.22 and earlier)
+	PossiblePraatPaths    = paste(LibraryDirectories,InterveningSlashes,"PraatR/Praat.exe",   sep="")
+	PossiblePraatconPaths = paste(LibraryDirectories,InterveningSlashes,"PraatR/praatcon.exe",sep="")
+
+	# Find which of these file paths point to files that actually exist
+	ExistingPraatPaths    = file.exists(PossiblePraatPaths   )
+	ExistingPraatconPaths = file.exists(PossiblePraatconPaths)
+
+	# If neither Praat.exe nor praatcon.exe can be found in any of the enumerated places, issue an error message and stop computation
+	if( sum(c(ExistingPraatconPaths,ExistingPraatPaths))==0 ){ stop("Could not find Praat inside the folder for the PraatR package.\n       Make sure PraatR is properly installed.") }
+
+	# Find out if only praatcon.exe (and not Praat.exe) is found
+	if( sum( ExistingPraatconPaths) >= 1 &
+		sum( ExistingPraatPaths) == 0 ){
+		# Override the 'UsingPraatcon' variable to indicate this is the case
+		UsingPraatcon = TRUE
+		# Issue a warning instructing the user to swap out praatcon.exe for Praat.exe 6.0.08 or later
+		warning("You are using an older version of Praat (based on praatcon.exe).\n  Please follow the installation instructions on the PraatR website\n  to swap out praatcon.exe with the most recent version of Praat.exe\n  (version 6.0.08 or later).")
+		# Version 6.0.08 is specifically listed because it is the first Praat 6.0 version released for all OSes where support for Query commands was reinstated.
+	}
+		
+	# Regardless of whether praatcon.exe or Praat.exe is used, use the first path that exists
+	if(UsingPraatcon){
+		PraatPath = PossiblePraatconPaths[min( which(ExistingPraatconPaths) )]
+		RunText = "" # Do NOT include "--run" flag for praatcon.exe
+	}else{ # i.e. if using Praat.exe
+		PraatPath = PossiblePraatPaths[min( which(ExistingPraatPaths) )]
+	}
+
 }else{
 	if( OSType=="unix" & SystemName=="Darwin" ){
 		UserOS = "Mac" # For later down below in the code
@@ -436,6 +469,7 @@ if(CommandType == "Create" | CommandType == "Modify" | CommandType == "Play"){
 # These three are treated 100% equivalently for the time being, but it's in principle possible to separate them down the road
 
 CommandString = paste( PraatPath,
+                       RunText,
                        ScriptPath,
                        CommandType,
                        UnderbarCommand,
@@ -457,14 +491,13 @@ CommandStringB = gsub(CommandStringA,pattern=")",replacement="\\)",fixed=TRUE)
 system(command=CommandStringB, intern=intern)
 } # End 'if Mac'
 
-# Eventually, somehow detailedly check the response status from this function call and issue custom messages accordingly to help the user troubleshoot if there are any problems?
-
 } # End 'if this is a query command'
 
 if(CommandType == "Query"){
 
 CommandString = paste( PraatPath,
-                       "-a", # This switch to the Praat program makes the output go back into R through the 'standard input' (stdin)
+                       "-a", # Alternatively "--ansi", but still use this for backward compatibility # This switch to the Praat program makes the output go back into R through the 'standard input' (stdin)
+					   RunText,
                        ScriptPath,
                        CommandType,
                        UnderbarCommand,

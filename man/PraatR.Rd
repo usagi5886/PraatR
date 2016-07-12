@@ -13,8 +13,8 @@ PraatR is an architecture for controlling the phonetics software Praat (\url{htt
 \tabular{ll}{
 Package: \tab PraatR\cr
 Type: \tab Package\cr
-Version: \tab 2.3\cr
-Date: \tab 2015-02-16\cr
+Version: \tab 2.4\cr
+Date: \tab 2015-07-12\cr
 License: \tab GNU General Public License (Version 3 or later)\cr
 }
 For information on how to use \code{\link{praat}()}, see \url{ http://www.aaronalbin.com/praatr/ }. For information about the various commands that can be executed, see \url{ http://www.aaronalbin.com/praatr/commands.html }.
